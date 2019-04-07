@@ -15,14 +15,21 @@ def read_neighbors(path):
             parsed = list(map(int, line.split("\t")))
             hd, tl = parsed[0], parsed[1:]
             adj_list[hd] = tl
-    G.add_nodes_from(adj_list.keys())
+    G.add_nodes_from(set(adj_list.keys()) - set([-1]))
+    for n in G.nodes:
+        G.nodes[n]['boundary'] = False
     for n, adj in adj_list.items():
+        if n == -1:
+            continue
         for v in adj:
+            if v == -1:
+                G.nodes[n]['boundary'] = True
+                continue
             G.add_edge(n, v)
     return G
 
 def read_population(path):
-    pop = {-1: 0}
+    pop = {}
     with open(path) as fp:
         for line in fp:
             parsed = list(map(int, line.split("\t")[:2]))
