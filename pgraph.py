@@ -2,6 +2,7 @@ from networkx import Graph
 import networkx as nx
 from os.path import join, normpath, basename
 import pandas as pd
+import sys
 
 #FIXME: pandas is unnecessary, but using here for quick prototyping
 
@@ -50,11 +51,8 @@ class PGraph(Graph):
             G.nodes[k]['population'] = v
         return G
 
-DATA_PATH = '/Users/lbq/Downloads/NCElectionData 2/ClusterData/ExtractedData/CumberlandPrecinct'
-
-G = PGraph.from_data(DATA_PATH)
+G = PGraph.from_data(path = sys.argv[1])
 print(G)
-
 
 import matplotlib.pyplot as plt
 nx.draw_spectral(G)
