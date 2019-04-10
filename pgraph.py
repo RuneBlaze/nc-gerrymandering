@@ -4,15 +4,15 @@ import networkx as nx
 from os.path import join, normpath, basename
 import pandas as pd
 import shapefile as sf
+from parsing import read_population, read_shapes
 from geometry import make_oriented, \
                      perimeter_area, \
                      convex_hull_perimeter_area, \
                      enclosing_circle_center_radius
 
-#FIXME: pandas is unnecessary, but using here for quick prototyping
 
-# returns an adjacency list, 
-def read_neighbors(path):
+def construct_graph(path):
+    """reads the adjacency list and construct the base graph"""
     G = Graph()
     adj_list = {}
     with open(path) as fp:
@@ -33,36 +33,6 @@ def read_neighbors(path):
             G.add_edge(n, v)
     return G
 
-def read_population(path):
-    pop = {}
-    with open(path) as fp:
-        for line in fp:
-            parsed = list(map(int, line.split("\t")[:2]))
-            i, n = parsed
-            pop[i] = n
-    return pop
-
-def read_shapes(path):
-    """ 
-    Parses point information from a shapefile
-    
-    Parameters:
-    path -- the base filename of the shapefile or
-            the complete filename of any of the shapefile component files.
-    
-    
-    Returns a mapping from precinct indices to a list of points
-    describing that precinct
-    
-    The points are in the same order they were stored
-    in the input shapefile
-    """
-    shapes = {}
-    shapefile = sf.Reader(path)
-    for index, shape in enumerate(shapefile.shapes()):
-        shapes[index] = shape.points
-    return shapes
-
 def draw_shapefile(path, figsize = (8, 8)):
     """ Draws the shapefile stored at the given path """
     faces = read_shapes(path)
@@ -81,7 +51,7 @@ class PGraph(Graph):
         neighbors_path = join(data_path, "%s_NEIGHBORS.txt" % precinct_name)
         pop_path = join(data_path, "%s_POPULATION.txt" % precinct_name)
         
-        G = read_neighbors(neighbors_path)
+        G = construct_graph(neighbors_path)
         pops = read_population(pop_path)
         shapes = read_shapes(shape_path)
         for k, v in pops.items():
