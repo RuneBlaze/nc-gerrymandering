@@ -87,6 +87,8 @@ class PGraph(Graph):
         return G
 
 if __name__ == '__main__':
+    import matplotlib.pyplot as plt
+    
     precint_name = 'CumberlandPrecinct'
     
     data_path = 'NCElectionData/ClusterData/ExtractedData/' + precint_name
@@ -97,7 +99,6 @@ if __name__ == '__main__':
     G = PGraph.from_data(data_path, shape_path)
     print(G)
     
-    import matplotlib.pyplot as plt
     nx.draw_spectral(G)
     # nx.draw_networkx_labels(G)
     plt.show()
