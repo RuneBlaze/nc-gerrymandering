@@ -1,8 +1,13 @@
+from math import pi, isclose
 from networkx import Graph
 import networkx as nx
 from os.path import join, normpath, basename
 import pandas as pd
 import shapefile as sf
+from geometry import make_oriented, \
+                     perimeter_area, \
+                     convex_hull_perimeter_area, \
+                     enclosing_circle_center_radius
 
 #FIXME: pandas is unnecessary, but using here for quick prototyping
 
@@ -70,18 +75,41 @@ def draw_shapefile(path, figsize = (8, 8)):
 
 class PGraph(Graph):
     @staticmethod
-    def from_data(data_path, shape_path):
+    def from_data(data_path, shape_path, debug = False):
         precinct_name = basename(normpath(data_path))
         area_path = join(data_path, "%s_AREAS.txt" % precinct_name)
         neighbors_path = join(data_path, "%s_NEIGHBORS.txt" % precinct_name)
         pop_path = join(data_path, "%s_POPULATION.txt" % precinct_name)
+        
         G = read_neighbors(neighbors_path)
         pops = read_population(pop_path)
         shapes = read_shapes(shape_path)
         for k, v in pops.items():
             G.nodes[k]['population'] = v
         for index, points in shapes.items():
-            G.nodes[index]['points'] = points
+            oriented = make_oriented(points)
+            G.nodes[index]['points'] = oriented
+            
+            perimeter, area = perimeter_area(points)
+            G.nodes[index]['perimeter'] = perimeter
+            G.nodes[index]['area'] = area
+            
+            ch_perimeter, ch_area = convex_hull_perimeter_area(points)
+            G.nodes[index]['ch_perimeter'] = ch_perimeter
+            G.nodes[index]['ch_area'] = ch_area
+            
+            center, radius = enclosing_circle_center_radius(points)
+            G.nodes[index]['enclosing_circle_circumference'] = 2 * pi * radius
+            G.nodes[index]['enclosing_circle_area'] = pi * radius * radius
+            G.nodes[index]['enclosing_circle_center'] = center
+            
+            if debug:
+                assert(len(oriented) == len(points))
+                assert(isclose(perimeter_area(oriented)[0], perimeter_area(points)[0]))
+                assert(isclose(perimeter_area(oriented)[1], perimeter_area(points)[1]))
+                assert(isclose(enclosing_circle_center_radius(oriented)[0][0], enclosing_circle_center_radius(points)[0][0]))
+                assert(isclose(enclosing_circle_center_radius(oriented)[0][1], enclosing_circle_center_radius(points)[0][1]))
+                assert(isclose(enclosing_circle_center_radius(oriented)[1], enclosing_circle_center_radius(points)[1]))
         return G
 
 if __name__ == '__main__':
