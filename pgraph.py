@@ -40,11 +40,11 @@ def read_population(path):
 
 class PGraph(Graph):
     @staticmethod
-    def from_data(cluster_path):
-        precinct_name = basename(normpath(cluster_path))
-        area_path = join(cluster_path, "%s_AREAS.txt" % precinct_name)
-        neighbors_path = join(cluster_path, "%s_NEIGHBORS.txt" % precinct_name)
-        pop_path = join(cluster_path, "%s_POPULATION.txt" % precinct_name)
+    def from_data(data_path):
+        precinct_name = basename(normpath(data_path))
+        area_path = join(data_path, "%s_AREAS.txt" % precinct_name)
+        neighbors_path = join(data_path, "%s_NEIGHBORS.txt" % precinct_name)
+        pop_path = join(data_path, "%s_POPULATION.txt" % precinct_name)
         G = read_neighbors(neighbors_path)
         pops = read_population(pop_path)
         for k, v in pops.items():
@@ -54,9 +54,9 @@ class PGraph(Graph):
 if __name__ == '__main__':
     precint_name = 'CumberlandPrecinct'
     
-    cluster_path = 'NCElectionData/ClusterData/ExtractedData/' + precint_name
+    data_path = 'NCElectionData/ClusterData/ExtractedData/' + precint_name
     
-    G = PGraph.from_data(cluster_path)
+    G = PGraph.from_data(data_path)
     print(G)
     
     import matplotlib.pyplot as plt
