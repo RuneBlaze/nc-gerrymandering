@@ -2,7 +2,6 @@ from networkx import Graph
 import networkx as nx
 from os.path import join, normpath, basename
 import pandas as pd
-import sys
 import shapefile as sf
 
 #FIXME: pandas is unnecessary, but using here for quick prototyping
