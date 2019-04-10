@@ -8,7 +8,6 @@ import shapefile as sf
 
 # returns an adjacency list, 
 def read_neighbors(path):
-    # return nx.read_adjlist(path)
     G = Graph()
     adj_list = {}
     with open(path) as fp:
@@ -99,5 +98,4 @@ if __name__ == '__main__':
     print(G)
     
     nx.draw_spectral(G)
-    # nx.draw_networkx_labels(G)
     plt.show()
