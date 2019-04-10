@@ -4,7 +4,7 @@ import networkx as nx
 from os.path import join, normpath, basename
 import pandas as pd
 import shapefile as sf
-from parsing import read_population, read_shapes
+from parsing import read_population, read_shapes, read_adj_list
 from geometry import make_oriented, \
                      perimeter_area, \
                      convex_hull_perimeter_area, \
@@ -14,12 +14,7 @@ from geometry import make_oriented, \
 def construct_graph(path):
     """reads the adjacency list and construct the base graph"""
     G = Graph()
-    adj_list = {}
-    with open(path) as fp:
-        for line in fp:
-            parsed = list(map(int, line.split("\t")))
-            hd, tl = parsed[0], parsed[1:]
-            adj_list[hd] = tl
+    adj_list = read_adj_list(path)
     G.add_nodes_from(set(adj_list.keys()) - set([-1]))
     for n in G.nodes:
         G.nodes[n]['boundary'] = False

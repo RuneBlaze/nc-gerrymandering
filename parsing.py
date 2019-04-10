@@ -10,6 +10,15 @@ def read_population(path):
             pop[i] = n
     return pop
 
+def read_adj_list(path):
+    adj_list = {}
+    with open(path) as fp:
+        for line in fp:
+            parsed = list(map(int, line.split("\t")))
+            hd, tl = parsed[0], parsed[1:]
+            adj_list[hd] = tl
+    return adj_list
+
 def read_shapes(path):
     """ 
     Parses point information from a shapefile
