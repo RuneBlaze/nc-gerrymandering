@@ -30,8 +30,6 @@ def construct_graph(path, weights = []):
             G.add_edge(n, v, weight = weights[n][v])
     return G
 
-# for all discs centereed, complement of object intersected with disk and object outside the disk
-
 def draw_shapefile(path, figsize = (8, 8)):
     """ Draws the shapefile stored at the given path """
     faces = read_shapes(path)
