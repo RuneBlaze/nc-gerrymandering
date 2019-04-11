@@ -1,18 +1,14 @@
 from math import pi, isclose
 from networkx import Graph
 import networkx as nx
-from os.path import join, normpath, basename
+from os.path import join
 import pandas as pd
-import shapefile as sf
 from parsing import read_population, read_shapes, read_adj_list
 from geometry import make_oriented, \
                      perimeter_area, \
                      convex_hull_perimeter_area, \
                      enclosing_circle_center_radius
-from typing import List, Dict
 from voting_reader import Contest, Party, Voting, read_votes, read_precinct_prefixes
-
-ELECTION_PATH = 'NCElectionData/ElectionData/results_pct_20121106.txt'
 
 def construct_graph(path):
     """reads the adjacency list and construct the base graph"""
@@ -43,21 +39,20 @@ def draw_shapefile(path, figsize = (8, 8)):
 
 class PGraph(Graph):
     @staticmethod
-    def from_data(data_path, shape_path, debug = False):
-        precinct_name = basename(normpath(data_path))
-        area_path = join(data_path, "%s_AREAS.txt" % precinct_name)
-        neighbors_path = join(data_path, "%s_NEIGHBORS.txt" % precinct_name)
-        pop_path = join(data_path, "%s_POPULATION.txt" % precinct_name)
+    def from_data(precinct_name, precinct_folder, data_path, shape_path, election_path, debug = False):
+        area_path = join(data_path, "%s_AREAS.txt" % precinct_folder)
+        neighbors_path = join(data_path, "%s_NEIGHBORS.txt" % precinct_folder)
+        pop_path = join(data_path, "%s_POPULATION.txt" % precinct_folder)
         
         G = construct_graph(neighbors_path)
         pops = read_population(pop_path)
         shapes = read_shapes(shape_path)
         for k, v in pops.items():
             G.nodes[k]['population'] = v
-        voting_data = read_votes(ELECTION_PATH, PRECINCT_PREFIX)
+        voting_data = read_votes(election_path, precinct_name)
         voting_prefixes = read_precinct_prefixes(shape_path)
-        for i, _ in enumerate(G.nodes):
-            G.nodes[k]['voting'] = voting_data[voting_prefixes[i]]
+        for index in G.nodes:
+            G.nodes[index]['voting'] = voting_data[voting_prefixes[index]]
         for index, points in shapes.items():
             oriented = make_oriented(points)
             G.nodes[index]['points'] = oriented
@@ -83,19 +78,19 @@ class PGraph(Graph):
                 assert(isclose(enclosing_circle_center_radius(oriented)[1], enclosing_circle_center_radius(points)[1]))
         return G
 
-PRECINCT_PREFIX = 'Cumberland'
-
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
     
-    precint_name = '%sPrecinct' % PRECINCT_PREFIX
+    PRECINCT_NAME = 'Cumberland'
+    PRECINCT_FOLDER = '%sPrecinct' % PRECINCT_PREFIX
     
-    data_path = 'NCElectionData/ClusterData/ExtractedData/' + precint_name
-    shape_path = 'NCElectionData/ClusterData/ShapeFiles/' + precint_name + '/' + precint_name
+    DATA_PATH = 'NCElectionData/ClusterData/ExtractedData/' + PRECINCT_FOLDER
+    SHAPE_PATH = 'NCElectionData/ClusterData/ShapeFiles/' + PRECINCT_FOLDER + '/' + PRECINCT_FOLDER
+    ELECTION_PATH = 'NCElectionData/ElectionData/results_pct_20121106.txt'
     
-    draw_shapefile(shape_path)
+    draw_shapefile(SHAPE_PATH)
     
-    G = PGraph.from_data(data_path, shape_path)
+    G = PGraph.from_data(PRECINCT_NAME, PRECINCT_FOLDER, DATA_PATH, SHAPE_PATH, ELECTION_PATH)
     print(G)
     
     nx.draw_spectral(G)
