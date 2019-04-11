@@ -9,7 +9,10 @@ from geometry import make_oriented, \
                      perimeter_area, \
                      convex_hull_perimeter_area, \
                      enclosing_circle_center_radius
+from typing import List, Dict
+from voting_reader import Contest, Party, Voting, read_votes, read_precinct_prefixes
 
+ELECTION_PATH = 'NCElectionData/ElectionData/results_pct_20121106.txt'
 
 def construct_graph(path):
     """reads the adjacency list and construct the base graph"""
@@ -51,10 +54,13 @@ class PGraph(Graph):
         shapes = read_shapes(shape_path)
         for k, v in pops.items():
             G.nodes[k]['population'] = v
+        voting_data = read_votes(ELECTION_PATH, PRECINCT_PREFIX)
+        voting_prefixes = read_precinct_prefixes(shape_path)
+        for i, _ in enumerate(G.nodes):
+            G.nodes[k]['voting'] = voting_data[voting_prefixes[i]]
         for index, points in shapes.items():
             oriented = make_oriented(points)
             G.nodes[index]['points'] = oriented
-            
             perimeter, area = perimeter_area(points)
             G.nodes[index]['perimeter'] = perimeter
             G.nodes[index]['area'] = area
@@ -77,10 +83,12 @@ class PGraph(Graph):
                 assert(isclose(enclosing_circle_center_radius(oriented)[1], enclosing_circle_center_radius(points)[1]))
         return G
 
+PRECINCT_PREFIX = 'Cumberland'
+
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
     
-    precint_name = 'CumberlandPrecinct'
+    precint_name = '%sPrecinct' % PRECINCT_PREFIX
     
     data_path = 'NCElectionData/ClusterData/ExtractedData/' + precint_name
     shape_path = 'NCElectionData/ClusterData/ShapeFiles/' + precint_name + '/' + precint_name
