@@ -1,5 +1,6 @@
 from os.path import join, normpath, basename
 import shapefile as sf
+
 #FIXME: pandas is unnecessary, but using here for quick prototyping
 def read_population(path):
     pop = {}
@@ -39,3 +40,12 @@ def read_shapes(path):
     for index, shape in enumerate(shapefile.shapes()):
         shapes[index] = shape.points
     return shapes
+
+def read_border_lengths(num_precincts, path):
+    borders = [[float('inf') for _ in range(num_precincts)] for _ in range(num_precincts)]
+    with open(path) as fp:
+        for line in fp:
+            node_from, node_to, border_length = line.split("\t")
+            node_from, node_to, border_length = int(node_from), int(node_to), float(border_length)      
+            borders[node_from][node_to] = border_length
+    return borders

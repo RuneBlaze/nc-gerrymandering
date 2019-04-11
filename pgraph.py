@@ -3,14 +3,17 @@ from networkx import Graph
 import networkx as nx
 from os.path import join
 import pandas as pd
-from parsing import read_population, read_shapes, read_adj_list
+from parsing import read_population, \
+                    read_shapes, \
+                    read_adj_list, \
+                    read_border_lengths
 from geometry import make_oriented, \
                      perimeter_area, \
                      convex_hull_perimeter_area, \
                      enclosing_circle_center_radius
 from voting_reader import Contest, Party, Voting, read_votes, read_precinct_prefixes
 
-def construct_graph(path):
+def construct_graph(path, weights = []):
     """reads the adjacency list and construct the base graph"""
     G = Graph()
     adj_list = read_adj_list(path)
@@ -24,8 +27,10 @@ def construct_graph(path):
             if v == -1:
                 G.nodes[n]['boundary'] = True
                 continue
-            G.add_edge(n, v)
+            G.add_edge(n, v, weight = weights[n][v])
     return G
+
+# for all discs centereed, complement of object intersected with disk and object outside the disk
 
 def draw_shapefile(path, figsize = (8, 8)):
     """ Draws the shapefile stored at the given path """
@@ -43,10 +48,14 @@ class PGraph(Graph):
         area_path = join(data_path, "%s_AREAS.txt" % precinct_folder)
         neighbors_path = join(data_path, "%s_NEIGHBORS.txt" % precinct_folder)
         pop_path = join(data_path, "%s_POPULATION.txt" % precinct_folder)
+        border_path = join(data_path, "%s_BORDERLENGTHS.txt" % precinct_folder)
         
-        G = construct_graph(neighbors_path)
-        pops = read_population(pop_path)
         shapes = read_shapes(shape_path)
+        num_precincts = len(shapes)
+        border_perimeters = read_border_lengths(num_precincts, border_path)
+        G = construct_graph(neighbors_path, border_perimeters)
+        pops = read_population(pop_path)
+        
         for k, v in pops.items():
             G.nodes[k]['population'] = v
         voting_data = read_votes(election_path, precinct_name)
