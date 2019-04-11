@@ -1,4 +1,9 @@
 from math import pi, isclose
+from drawing import draw_shapefile
+from geometry import make_oriented, \
+                     perimeter_area, \
+                     convex_hull_perimeter_area, \
+                     enclosing_circle_center_radius
 from networkx import Graph
 import networkx as nx
 from os.path import join
@@ -6,10 +11,6 @@ from parsing import read_population, \
                     read_shapes, \
                     read_adj_list, \
                     read_border_lengths
-from geometry import make_oriented, \
-                     perimeter_area, \
-                     convex_hull_perimeter_area, \
-                     enclosing_circle_center_radius
 from voting_reader import Contest, Party, Voting, read_votes, read_precinct_prefixes
 
 def construct_graph(path, weights = []):
@@ -28,16 +29,6 @@ def construct_graph(path, weights = []):
                 continue
             G.add_edge(n, v, weight = weights[n][v])
     return G
-
-def draw_shapefile(path, figsize = (8, 8)):
-    """ Draws the shapefile stored at the given path """
-    faces = read_shapes(path)
-    plt.figure(figsize = figsize)
-    for face in faces.values():
-        polygon = face + [face[0]]
-        x, y = zip(*polygon)
-        plt.plot(x, y)
-    plt.show()
 
 class PGraph(Graph):
     @staticmethod
