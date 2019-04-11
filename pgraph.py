@@ -10,7 +10,9 @@ from os.path import join
 from parsing import read_population, \
                     read_shapes, \
                     read_adj_list, \
-                    read_border_lengths
+                    read_border_lengths, \
+                    read_areas, \
+                    read_perimeters
 from voting_reader import Contest, Party, Voting, read_votes, read_precinct_prefixes
 
 def construct_graph(path, weights = []):
@@ -37,15 +39,22 @@ class PGraph(Graph):
         neighbors_path = join(data_path, "%s_NEIGHBORS.txt" % precinct_folder)
         pop_path = join(data_path, "%s_POPULATION.txt" % precinct_folder)
         border_path = join(data_path, "%s_BORDERLENGTHS.txt" % precinct_folder)
+        area_path = join(data_path, "%s_AREAS.txt" % precinct_folder)
         
         shapes = read_shapes(shape_path)
         num_precincts = len(shapes)
+        
+        pops = read_population(pop_path)
+        areas = read_areas(area_path)
+        perimeters = read_perimeters(border_path)
         border_perimeters = read_border_lengths(num_precincts, border_path)
         G = construct_graph(neighbors_path, border_perimeters)
-        pops = read_population(pop_path)
         
-        for k, v in pops.items():
-            G.nodes[k]['population'] = v
+        for index in range(num_precincts):
+            G.nodes[index]['population'] = pops[index]
+            G.nodes[index]['area'] = areas[index]
+            G.nodes[index]['perimeter'] = perimeters[index]
+            
         voting_data = read_votes(election_path, precinct_name)
         voting_prefixes = read_precinct_prefixes(shape_path)
         for index in G.nodes:
@@ -53,9 +62,6 @@ class PGraph(Graph):
         for index, points in shapes.items():
             oriented = make_oriented(points)
             G.nodes[index]['points'] = oriented
-            perimeter, area = perimeter_area(points)
-            G.nodes[index]['perimeter'] = perimeter
-            G.nodes[index]['area'] = area
             
             ch_perimeter, ch_area = convex_hull_perimeter_area(points)
             G.nodes[index]['ch_perimeter'] = ch_perimeter

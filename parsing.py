@@ -1,12 +1,20 @@
 from os.path import join, normpath, basename
 import shapefile as sf
 
-#FIXME: pandas is unnecessary, but using here for quick prototyping
+def read_areas(path):
+    areas = {}
+    with open(path) as fp:
+        for line in fp:
+            index, area = line.split('\t')
+            index, area = int(index), float(area)
+            areas[index] = area
+    return areas
+
 def read_population(path):
     pop = {}
     with open(path) as fp:
         for line in fp:
-            parsed = list(map(int, line.split("\t")[:2]))
+            parsed = list(map(int, line.split('\t')[:2]))
             i, n = parsed
             pop[i] = n
     return pop
@@ -15,7 +23,7 @@ def read_adj_list(path):
     adj_list = {}
     with open(path) as fp:
         for line in fp:
-            parsed = list(map(int, line.split("\t")))
+            parsed = list(map(int, line.split('\t')))
             hd, tl = parsed[0], parsed[1:]
             adj_list[hd] = tl
     return adj_list
@@ -45,7 +53,16 @@ def read_border_lengths(num_precincts, path):
     borders = [[float('inf') for _ in range(num_precincts)] for _ in range(num_precincts)]
     with open(path) as fp:
         for line in fp:
-            node_from, node_to, border_length = line.split("\t")
-            node_from, node_to, border_length = int(node_from), int(node_to), float(border_length)      
-            borders[node_from][node_to] = border_length
+            precinct_from, precinct_to, border_length = line.split('\t')
+            precinct_from, precinct_to, border_length = int(precinct_from), int(precinct_to), float(border_length)      
+            borders[precinct_from][precinct_to] = border_length
     return borders
+
+def read_perimeters(path):
+    perimeters = {}
+    with open(path) as fp:
+        for line in fp:
+            precinct_from, _, border_length = line.split('\t')
+            precinct_from, border_length = int(precinct_from), float(border_length)
+            perimeters[precinct_from] = perimeters.get(precinct_from, 0.0) + border_length
+    return perimeters
