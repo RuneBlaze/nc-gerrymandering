@@ -2,7 +2,6 @@ from math import pi, isclose
 from networkx import Graph
 import networkx as nx
 from os.path import join
-import pandas as pd
 from parsing import read_population, \
                     read_shapes, \
                     read_adj_list, \
