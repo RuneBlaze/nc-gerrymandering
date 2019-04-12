@@ -11,10 +11,14 @@ def perimeter_area(polygon):
     poly = Polygon(polygon)
     return poly.length, poly.area
 
+def convex_hull(points):
+    ch = MultiPoint(points).convex_hull
+    return list(ch.exterior.coords)
+
 def convex_hull_perimeter_area(points):
     ch = MultiPoint(points).convex_hull
     return ch.length, ch.area
 
-def enclosing_circle_center_radius(points):
+def circumcircle_center_radius(points):
     x, y, radius = make_circle(points)
     return (x, y), radius

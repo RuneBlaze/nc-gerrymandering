@@ -1,9 +1,10 @@
-from math import pi, isclose
 from drawing import draw_shapefile
 from geometry import make_oriented, \
                      perimeter_area, \
+                     convex_hull, \
                      convex_hull_perimeter_area, \
-                     enclosing_circle_center_radius
+                     circumcircle_center_radius
+from math import pi, isclose, sqrt
 from networkx import Graph
 import networkx as nx
 from os.path import join
@@ -13,6 +14,7 @@ from parsing import read_population, \
                     read_border_lengths, \
                     read_areas, \
                     read_perimeters
+from typing import NamedTuple
 from voting_reader import Contest, Party, Voting, read_votes, read_precinct_prefixes
 
 def construct_graph(path, weights = []):
@@ -29,8 +31,18 @@ def construct_graph(path, weights = []):
             if v == -1:
                 G.nodes[n]['boundary'] = True
                 continue
-            G.add_edge(n, v, weight = weights[n][v])
+            G.add_edge(n, v, border_length = weights[n][v])
     return G
+
+class subset_data(NamedTuple):
+        area : float = 0.0
+        perimeter : float = 0.0
+        convex_hull_area : float = 0.0
+        convex_hull_perimeter : float = 0.0
+        circumcircle_area : float = 0.0
+        circumcircle_circumference : float = 0.0
+        area_of_circle_with_same_perimeter : float = 0.0
+        perimeter_of_circle_with_same_area : float = 0.0
 
 class PGraph(Graph):
     @staticmethod
@@ -44,12 +56,12 @@ class PGraph(Graph):
         shapes = read_shapes(shape_path)
         num_precincts = len(shapes)
         
-        pops = read_population(pop_path)
-        areas = read_areas(area_path)
-        perimeters = read_perimeters(border_path)
         border_perimeters = read_border_lengths(num_precincts, border_path)
         G = construct_graph(neighbors_path, border_perimeters)
         
+        pops = read_population(pop_path)
+        areas = read_areas(area_path)
+        perimeters = read_perimeters(border_path)
         for index in range(num_precincts):
             G.nodes[index]['population'] = pops[index]
             G.nodes[index]['area'] = areas[index]
@@ -67,7 +79,7 @@ class PGraph(Graph):
             G.nodes[index]['ch_perimeter'] = ch_perimeter
             G.nodes[index]['ch_area'] = ch_area
             
-            center, radius = enclosing_circle_center_radius(points)
+            center, radius = circumcircle_center_radius(points)
             G.nodes[index]['enclosing_circle_circumference'] = 2 * pi * radius
             G.nodes[index]['enclosing_circle_area'] = pi * radius * radius
             G.nodes[index]['enclosing_circle_center'] = center
@@ -76,10 +88,89 @@ class PGraph(Graph):
                 assert(len(oriented) == len(points))
                 assert(isclose(perimeter_area(oriented)[0], perimeter_area(points)[0]))
                 assert(isclose(perimeter_area(oriented)[1], perimeter_area(points)[1]))
-                assert(isclose(enclosing_circle_center_radius(oriented)[0][0], enclosing_circle_center_radius(points)[0][0]))
-                assert(isclose(enclosing_circle_center_radius(oriented)[0][1], enclosing_circle_center_radius(points)[0][1]))
-                assert(isclose(enclosing_circle_center_radius(oriented)[1], enclosing_circle_center_radius(points)[1]))
+                assert(isclose(circumcircle_center_radius(oriented)[0][0], circumcircle_center_radius(points)[0][0]))
+                assert(isclose(circumcircle_center_radius(oriented)[0][1], circumcircle_center_radius(points)[0][1]))
+                assert(isclose(circumcircle_center_radius(oriented)[1], circumcircle_center_radius(points)[1]))
         return G
+    
+    @staticmethod
+    def _calculate_subset_perimeter(G, 
+                                    subset_indices, 
+                                    is_neighbor = lambda i, j: i in G.neighbors(j)):
+        perimeter = 0.0
+        for index in subset_indices:
+            perimeter += G.nodes[index]['perimeter']
+        for index in subset_indices:
+            for index2 in subset_indices:
+                if index != index2 and is_neighbor(index, index2):
+                    perimeter -= G[index][index2]['border_length']
+        return perimeter
+    
+    @staticmethod
+    def _calculate_subset_area(G, subset_indices):
+        area = 0.0
+        for index in subset_indices:
+            area += G.nodes[index]['area']
+        return area
+    
+    @staticmethod
+    def _calculate_subset_point_set(G, subset_indices):
+        point_set = []
+        for index in subset_indices:
+            point_set.extend(G.nodes[index]['points'])
+        return point_set
+    
+    @staticmethod
+    def _calculate_subset_convex_hull_and_enclosing_circle(G, subset_indices):
+        points = PGraph._calculate_subset_point_set(G, subset_indices)
+        ch_perimeter, ch_area = convex_hull_perimeter_area(points)
+        _, circumcircle_radius = circumcircle_center_radius(points)
+        circumcircle_area = pi * circumcircle_radius * circumcircle_radius
+        circumcircle_circumference = 2 * pi * circumcircle_radius
+        return ch_area, ch_perimeter, circumcircle_area, circumcircle_circumference
+        
+    @staticmethod
+    def _calculate_area_of_circle_with_same_perimeter(perimeter):
+        radius = perimeter / 2 * pi
+        return pi * radius * radius
+    
+    @staticmethod
+    def _calculate_perimeter_of_circle_with_same_area(area):
+        radius = sqrt(area / pi)
+        return 2 * pi * radius
+    
+    @staticmethod
+    def calculate_subset_data(G, subset_indices):  
+        area = PGraph._calculate_subset_area(G, subset_indices)
+        perimeter = PGraph._calculate_subset_perimeter(G, subset_indices)
+        ch_perimeter, ch_area, circumcircle_circumference, circumcircle_area = \
+            PGraph._calculate_subset_convex_hull_and_enclosing_circle(G, subset_indices)
+        area_of_circle_with_same_perimeter = \
+            PGraph._calculate_area_of_circle_with_same_perimeter(perimeter)
+        perimeter_of_circle_with_same_area = \
+            PGraph._calculate_perimeter_of_circle_with_same_area(area)
+        
+        data = subset_data(perimeter = perimeter,
+                           area = area,
+                           convex_hull_area = ch_area,
+                           convex_hull_perimeter = ch_perimeter,
+                           circumcircle_area = circumcircle_area,
+                           circumcircle_circumference = circumcircle_circumference,
+                           area_of_circle_with_same_perimeter = area_of_circle_with_same_perimeter,
+                           perimeter_of_circle_with_same_area = perimeter_of_circle_with_same_area)
+        return data
+    
+    @staticmethod
+    def calculate_subset_circumcircle(G, subset_indices):
+        points = PGraph._calculate_subset_point_set(G, subset_indices)
+        center, radius = circumcircle_center_radius(points)
+        return center, radius
+    
+    @staticmethod
+    def calculate_subset_convex_hull(G, subset_indices):
+        points = PGraph._calculate_subset_point_set(G, subset_indices)
+        ch = convex_hull(points)
+        return ch
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
