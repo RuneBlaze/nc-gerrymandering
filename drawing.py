@@ -15,15 +15,17 @@ def draw_all_faces(pgraph, figsize = (8, 8)):
         face = pgraph.nodes[index]['points']
         polygon = face + [face[0]]
         x, y = zip(*polygon)
-        ax.plot(x, y)
+        ax.plot(x, y, color = 'black')
     plt.show()
     
 def draw_subset_faces(pgraph,  
-                     subset, 
-                     convex_hull = False, 
-                     circumcircle = False,
-                     color = 'b',
-                     figsize = (8, 8)):
+                      subset, 
+                      convex_hull = False, 
+                      circumcircle = False,
+                      subset_fill_color = 'blue',
+                      circumcircle_color = 'purple',
+                      convex_hull_color = 'green',
+                      figsize = (8, 8)):
     """ 
     Draws the given precinct graph and fills in subset of precincts provided
     
@@ -37,11 +39,16 @@ def draw_subset_faces(pgraph,
         face = pgraph.nodes[index]['points']
         polygon = face + [face[0]]
         x, y = zip(*polygon)
-        ax.plot(x, y)
+        ax.plot(x, y, color = 'black')
         if index in subset:
-            ax.fill(x, y, color = color)
+            ax.fill(x, y, color = subset_fill_color)
     if circumcircle:
         center, radius = PGraph.calculate_subset_circumcircle(pgraph, subset)
-        circle = mpatches.Circle(center, radius, linewidth = 2.0, fill = False)
+        circle = mpatches.Circle(center, radius, linewidth = 2.0, fill = False, color = circumcircle_color)
         ax.add_artist(circle)
+    if convex_hull:
+        hull = PGraph.calculate_subset_convex_hull(pgraph, subset)
+        hull = hull + [hull[0]]
+        x, y = zip(*hull)
+        ax.plot(x, y, color = convex_hull_color)
     plt.show()
