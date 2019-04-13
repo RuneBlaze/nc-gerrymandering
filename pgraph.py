@@ -1,4 +1,3 @@
-from drawing import draw_shapefile
 from geometry import make_oriented, \
                      perimeter_area, \
                      convex_hull, \
@@ -6,7 +5,6 @@ from geometry import make_oriented, \
                      circumcircle_center_radius
 from math import pi, isclose, sqrt
 from networkx import Graph
-import networkx as nx
 from os.path import join
 from parsing import read_population, \
                     read_shapes, \
@@ -15,7 +13,7 @@ from parsing import read_population, \
                     read_areas, \
                     read_perimeters
 from typing import NamedTuple
-from voting_reader import Contest, Party, Voting, read_votes, read_precinct_prefixes
+from voting_reader import read_votes, read_precinct_prefixes
 
 def construct_graph(path, weights = []):
     """reads the adjacency list and construct the base graph"""
@@ -171,21 +169,3 @@ class PGraph(Graph):
         points = PGraph._calculate_subset_point_set(G, subset_indices)
         ch = convex_hull(points)
         return ch
-
-if __name__ == '__main__':
-    import matplotlib.pyplot as plt
-    
-    PRECINCT_NAME = 'Cumberland'
-    PRECINCT_FOLDER = '%sPrecinct' % PRECINCT_PREFIX
-    
-    DATA_PATH = 'NCElectionData/ClusterData/ExtractedData/' + PRECINCT_FOLDER
-    SHAPE_PATH = 'NCElectionData/ClusterData/ShapeFiles/' + PRECINCT_FOLDER + '/' + PRECINCT_FOLDER
-    ELECTION_PATH = 'NCElectionData/ElectionData/results_pct_20121106.txt'
-    
-    draw_shapefile(SHAPE_PATH)
-    
-    G = PGraph.from_data(PRECINCT_NAME, PRECINCT_FOLDER, DATA_PATH, SHAPE_PATH, ELECTION_PATH)
-    print(G)
-    
-    nx.draw_spectral(G)
-    plt.show()
