@@ -25,7 +25,7 @@ def draw_subset_faces(pgraph,
                      color = 'b',
                      figsize = (8, 8)):
     """ 
-    Draws the shapefile stored at given path and fills in subset of precincts provided
+    Draws the given precinct graph and fills in subset of precincts provided
     
     Parameters:
     subset -- iterable of indices that indicate the subset of precincts chosen
