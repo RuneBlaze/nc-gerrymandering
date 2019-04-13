@@ -1,4 +1,3 @@
-from os.path import join, normpath, basename
 import shapefile as sf
 
 def read_areas(path):
