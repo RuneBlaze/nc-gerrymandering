@@ -13,7 +13,7 @@ from parsing import read_population, \
                     read_areas, \
                     read_perimeters
 from typing import NamedTuple
-from voting_reader import read_votes, read_precinct_prefixes
+from voting_reader import read_votes, read_precinct_prefixes, Party, dem_prob
 
 def construct_graph(path, weights = []):
     """reads the adjacency list and construct the base graph"""
@@ -41,6 +41,8 @@ class subset_data(NamedTuple):
         circumcircle_circumference : float = 0.0
         area_of_circle_with_same_perimeter : float = 0.0
         perimeter_of_circle_with_same_area : float = 0.0
+        dem_states : int = 0
+        rep_states : int = 0
 
 class PGraph(Graph):
     @staticmethod
@@ -68,14 +70,17 @@ class PGraph(Graph):
         voting_data = read_votes(election_path, precinct_name)
         voting_prefixes = read_precinct_prefixes(shape_path)
         for index in G.nodes:
-            G.nodes[index]['voting'] = voting_data[voting_prefixes[index]]
+            G.nodes[index]['voting'] = voting_data.get(voting_prefixes[index], list(voting_data.values())[0])
+            G.nodes[index]['dem'] = sum([v.votes for v in G.nodes[index]['voting'] if v.party == Party.dem])
+            G.nodes[index]['rep'] = sum([v.votes for v in G.nodes[index]['voting'] if v.party == Party.rep])
+            G.nodes[index]['dem_prob'] = dem_prob(G.nodes[index]['dem'],G.nodes[index]['rep'])
         for index, points in shapes.items():
             oriented = make_oriented(points)
             G.nodes[index]['points'] = oriented
             
             ch_perimeter, ch_area = convex_hull_perimeter_area(points)
             G.nodes[index]['ch_perimeter'] = ch_perimeter
-            G.nodes[index]['ch_area'] = ch_area
+            G.no es[index]['ch_area'] = ch_area
             
             center, radius = circumcircle_center_radius(points)
             G.nodes[index]['enclosing_circle_circumference'] = 2 * pi * radius
@@ -94,7 +99,8 @@ class PGraph(Graph):
     @staticmethod
     def _calculate_subset_perimeter(G, 
                                     subset_indices, 
-                                    is_neighbor = lambda i, j: i in G.neighbors(j)):
+                                    is_neighbor = None):
+        is_neighbor = is_neighbor or (lambda i, j: i in G.neighbors(j))
         perimeter = 0.0
         for index in subset_indices:
             perimeter += G.nodes[index]['perimeter']
@@ -103,6 +109,16 @@ class PGraph(Graph):
                 if index != index2 and is_neighbor(index, index2):
                     perimeter -= G[index][index2]['border_length']
         return perimeter
+    
+    @staticmethod
+    def _calculate_voting_prediction(G, subset_indices):
+        dem = 0
+        rep = 0
+        for index in subset_indices:
+            n = G.nodes[index]
+            dem += n['dem']
+            rep += n['rep']
+        return (dem, rep)
     
     @staticmethod
     def _calculate_subset_area(G, subset_indices):
@@ -147,6 +163,7 @@ class PGraph(Graph):
             PGraph._calculate_area_of_circle_with_same_perimeter(perimeter)
         perimeter_of_circle_with_same_area = \
             PGraph._calculate_perimeter_of_circle_with_same_area(area)
+        (dem, rep) = PGraph._calculate_voting_prediction(G, subset_indices)
         
         data = subset_data(perimeter = perimeter,
                            area = area,
@@ -155,7 +172,9 @@ class PGraph(Graph):
                            circumcircle_area = circumcircle_area,
                            circumcircle_circumference = circumcircle_circumference,
                            area_of_circle_with_same_perimeter = area_of_circle_with_same_perimeter,
-                           perimeter_of_circle_with_same_area = perimeter_of_circle_with_same_area)
+                           perimeter_of_circle_with_same_area = perimeter_of_circle_with_same_area,
+                           dem_states = dem,
+                           rep_states = rep)
         return data
     
     @staticmethod

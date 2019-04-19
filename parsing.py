@@ -4,7 +4,7 @@ def read_areas(path):
     areas = {}
     with open(path) as fp:
         for line in fp:
-            index, area = line.split('\t')
+            index, area = line.rstrip().split('\t')
             index, area = int(index), float(area)
             areas[index] = area
     return areas
@@ -22,7 +22,7 @@ def read_adj_list(path):
     adj_list = {}
     with open(path) as fp:
         for line in fp:
-            parsed = list(map(int, line.split('\t')))
+            parsed = list(map(int, line.rstrip().split('\t')))
             hd, tl = parsed[0], parsed[1:]
             adj_list[hd] = tl
     return adj_list
